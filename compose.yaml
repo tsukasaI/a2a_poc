@@ -1,5 +1,4 @@
 services:
-
   hydra:
     image: oryd/hydra:v2.2.0
     ports:
@@ -11,12 +10,13 @@ services:
       - SECRETS_SYSTEM=global_secret_to_encrypt_db
       - DSN=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
       - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
+      - URLS_LOGIN=http://localhost:3001/login?path=login
+      - URLS_CONSENT=http://localhost:3001/consent?path=consent
     restart: unless-stopped
     depends_on:
       - hydra-migrate
     networks:
       - hydranet
-
   hydra-migrate:
     image: oryd/hydra:v2.2.0
     environment:
@@ -25,7 +25,6 @@ services:
     restart: on-failure
     networks:
       - hydranet
-
   postgresd:
     image: postgres:16
     ports:
@@ -36,6 +35,18 @@ services:
       - POSTGRES_DB=hydra
     networks:
       - hydranet
+  app:
+    build:
+      context: ./server
+    tty: true
+    container_name: go-template
+    volumes:
+      - ../:/work/app
+      - ~/.gitconfig:/root/.gitconfig
+      - ${USERPROFILE-~}/.ssh:/home/vscode/.ssh
+    working_dir: /work/app
+    ports:
+      - "8000:8000"
 
 networks:
   hydranet:
