@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:uni_links/uni_links.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,10 +21,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       routes: {
-        '/': (context) => const MyHomePage(title: 'Flutter Demo Home Page'),
-        '/first': (context) => const FirstScreen(),
-        '/second': (context) => const SecondScreen(),
-        '/test': (context) => const MyHomePage(title: 'Test deepling'),
+        '/': (context) => const MyHomePage(title: 'A2A Demo Page'),
       },
     );
   }
@@ -40,7 +38,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? catchLink;
-  String? parameter;
+  String? name;
+  String? loginChallenge;
+  String? consentChallenge;
 
   @override
   void initState() {
@@ -51,18 +51,36 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> initUniLinks() async {
     linkStream.listen((String? link) {
       catchLink = link;
-      parameter = getQueryParameter(link);
+      getQueryParameters(link);
       setState(() {});
     }, onError: (err) {
       log(err);
     });
   }
 
-  String? getQueryParameter(String? link) {
-    if (link == null) return null;
+  void getQueryParameters(String? link) {
+    if (link == null) return;
     final uri = Uri.parse(link);
-    String? name = uri.queryParameters['name'];
-    return name;
+    name = uri.queryParameters['name'];
+    loginChallenge = uri.queryParameters['login_challenge'];
+    consentChallenge = uri.queryParameters['consent_challenge'];
+  }
+
+  Future<void> handleLogin(String locinCallengeCode) async {
+    Uri uri =
+        Uri(scheme: 'http', host: 'localhost', port: 3030, path: '/login');
+    // if (!await launchUrl(uri)) {
+    //   throw Exception('Could not launch $uri');
+    // }
+
+    http.Response res = await http.post(uri,
+        body: <String, String>{'login_challenge': locinCallengeCode});
+    String? location = res.headers['location'];
+    String? cookie = res.headers['set-cookie'];
+    if (location != null) {
+      Uri redirectUri = Uri.parse(location);
+      if (!await launchUrl(redirectUri)) {}
+    }
   }
 
   @override
@@ -76,24 +94,32 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'catchLink: $catchLink',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            Text(
-              'parameter: $parameter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            if (loginChallenge != null)
+              ElevatedButton(
+                  onPressed: () {
+                    handleLogin(loginChallenge!);
+                  },
+                  child: const Text('Login')),
             ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/first');
-                },
-                child: const Text('To First')),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/second');
+                  // Navigator.pushNamed(context, '/second');
                 },
                 child: const Text('To Second')),
+            const SizedBox(
+              height: 20.0,
+            ),
+            Text(
+              'name: $name',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'loginChallenge: $loginChallenge',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'consentChallenge: $consentChallenge',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),

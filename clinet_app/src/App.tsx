@@ -3,7 +3,7 @@ import { Route, Router, useSearchParams } from '@solidjs/router';
 import styles from './App.module.css';
 
 const clientId = "f4d402cd-a3b9-446b-857f-4411ac2bde71";
-type CodeQuery = {code: string}
+type CodeQuery = { code: string }
 
 const Callback: Component = () => {
   const [searchParams, _] = useSearchParams<CodeQuery>()
@@ -26,7 +26,7 @@ const Home: Component = () => {
   return (
     <div class={styles.App}>
       <header class={styles.header}>
-      <h1>Client App</h1>
+        <h1>Client App</h1>
       </header>
       <div>
         <p>開くボタン</p>

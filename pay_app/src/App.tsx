@@ -12,10 +12,8 @@ const Home: Component = () => {
   );
 };
 
-
-
-type LoginChallengeQuery = {login_challenge: string}
-type ConsentChallengeQuery = {consent_challenge: string}
+type LoginChallengeQuery = { login_challenge: string }
+type ConsentChallengeQuery = { consent_challenge: string }
 
 const Login: Component = () => {
   const [searchParams, _] = useSearchParams<LoginChallengeQuery>()
@@ -45,7 +43,7 @@ const Consent: Component = () => {
         <input type="hidden" name="consent_challenge" value={searchParams.consent_challenge} />
         <button type="submit" name="consent" value="accept">Allow</button>
         <button type="submit" name="consent" value="reject">Deny</button>
-    </form>
+      </form>
     </div>
   );
 };
