@@ -1,4 +1,4 @@
-module a2a_poc
+module a2a_poc_client
 
 go 1.23.0
 

@@ -38,9 +38,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? catchLink;
-  String? name;
   String? loginChallenge;
   String? consentChallenge;
+  String? code;
 
   @override
   void initState() {
@@ -54,32 +54,41 @@ class _MyHomePageState extends State<MyHomePage> {
       getQueryParameters(link);
       setState(() {});
     }, onError: (err) {
-      log(err);
+      print(err);
     });
   }
 
   void getQueryParameters(String? link) {
     if (link == null) return;
     final uri = Uri.parse(link);
-    name = uri.queryParameters['name'];
     loginChallenge = uri.queryParameters['login_challenge'];
     consentChallenge = uri.queryParameters['consent_challenge'];
+    code = uri.queryParameters['code'];
   }
 
   Future<void> handleLogin(String locinCallengeCode) async {
     Uri uri =
         Uri(scheme: 'http', host: 'localhost', port: 3030, path: '/login');
-    // if (!await launchUrl(uri)) {
-    //   throw Exception('Could not launch $uri');
-    // }
+    http.Response res = await http.post(uri, body: <String, String>{
+      'login_challenge': locinCallengeCode,
+      'username': 'testHydraUser0013',
+    });
+    String? consentUrl = res.headers['location'];
+    if (consentUrl != null) {
+      launchUrl(Uri.parse(consentUrl));
+    }
+  }
 
-    http.Response res = await http.post(uri,
-        body: <String, String>{'login_challenge': locinCallengeCode});
-    String? location = res.headers['location'];
-    String? cookie = res.headers['set-cookie'];
-    if (location != null) {
-      Uri redirectUri = Uri.parse(location);
-      if (!await launchUrl(redirectUri)) {}
+  Future<void> handleConsent(String consentCallengeCode) async {
+    Uri uri =
+        Uri(scheme: 'http', host: 'localhost', port: 3030, path: '/consent');
+    http.Response res = await http.post(uri, body: <String, String>{
+      'consent_challenge': consentCallengeCode,
+      'consent': 'accept'
+    });
+    String? consentUrl = res.headers['location'];
+    if (consentUrl != null) {
+      launchUrl(Uri.parse(consentUrl), mode: LaunchMode.externalApplication);
     }
   }
 
@@ -100,26 +109,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     handleLogin(loginChallenge!);
                   },
                   child: const Text('Login')),
-            ElevatedButton(
-                onPressed: () {
-                  // Navigator.pushNamed(context, '/second');
-                },
-                child: const Text('To Second')),
+            if (consentChallenge != null)
+              ElevatedButton(
+                  onPressed: () {
+                    handleConsent(consentChallenge!);
+                  },
+                  child: const Text('Consent')),
             const SizedBox(
               height: 20.0,
             ),
-            Text(
-              'name: $name',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text(
-              'loginChallenge: $loginChallenge',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text(
-              'consentChallenge: $consentChallenge',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            if (code != null)
+              Text(
+                'code: $code',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
           ],
         ),
       ),

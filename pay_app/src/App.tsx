@@ -20,7 +20,7 @@ const Login: Component = () => {
   console.log(searchParams.login_challenge)
   return <div class={styles.App}>
     <header class={styles.header}>
-      <h1>Login</h1>
+      <h1>Payment App -Login-</h1>
     </header>
     <div>
       <form action="http://localhost:3030/login" method="post">

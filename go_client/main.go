@@ -16,11 +16,58 @@ const hydraAdminURL = "http://localhost:4445"
 
 var cookieStore []*http.Cookie
 var verifier = oauth2.GenerateVerifier()
+var codeChallenge = oauth2.S256ChallengeOption(verifier)
+
+var (
+	loginTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+	<h2>SUPAY APP LOGIN</h2>
+	<p>The client app will redirect to the specific page in supay APP</p><br>
+	<p>Login validation will be done by supay side. If it can validate user with refresh and access token, that's fine too</p><br>
+	<p>This form will do an HTTP PUT request to /oauth2/auth/requests/login/accept?login_challenge=</p><br>
+	<p>when the user authentication is completed.</p><br>
+    <form action="/login" method="post">
+        <input type="hidden" name="login_challenge" value="{{.LoginChallenge}}" />
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" />
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" />
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>
+`
+	consentTemplate = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Consent</title>
+</head>
+<body>
+	<h2>SUPAY APP CONSENT PAGE</h2>
+	<p>supay app will receive a redirect_to URL. Either use deep link, or redirect internally somehow.</p><br>
+	<p>when the user consents, the app will redirect back to the client app with the ID token, refresh and access token</p>
+    <form action="/consent" method="post">
+        <input type="hidden" name="consent_challenge" value="{{.ConsentChallenge}}" />
+        <h2>{{.ClientName}} wants to access your account</h2>
+        <p>Requested scopes: {{.RequestedScopes}}</p>
+        <button type="submit" name="consent" value="accept">Allow</button>
+        <button type="submit" name="consent" value="reject">Deny</button>
+    </form>
+</body>
+</html>
+`
+)
 
 func main() {
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/consent", consentHandler)
-	port := ":3030"
+	port := ":3001"
 	log.Println("verifier: ", verifier)
 	log.Println("oauth2.S256ChallengeOption(verifier): ", oauth2.S256ChallengeOption(verifier))
 	log.Printf("Login & Consent app listening on port %s", port)
@@ -282,7 +329,4 @@ func getToken(code string) {
 	}
 
 	log.Printf("tok: %+v\n\n", tok)
-
-	// client := conf.Client(ctx, tok)
-	// client.Get("...")
 }

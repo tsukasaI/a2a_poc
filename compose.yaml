@@ -10,10 +10,13 @@ services:
       - SECRETS_SYSTEM=global_secret_to_encrypt_db
       - DSN=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
       - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
-      - URLS_LOGIN=testDeepLink://mobile/login?path=login
-      - URLS_CONSENT=testDeepLink://mobile/consent?path=consent
-      # - URLS_LOGIN=http://localhost:3001/login?path=login
-      # - URLS_CONSENT=http://localhost:3001/consent?path=consent
+      - LOG_LEAK_SENSITIVE_VALUES=true
+      - URLS_LOGIN=http://localhost:3030/login
+      - URLS_CONSENT=testDeepLink://mobile/consent
+      # - URLS_LOGIN=testDeepLink://mobile/login?path=login
+      # - URLS_CONSENT=testDeepLink://mobile/consent?path=consent
+      # - URLS_LOGIN=http://localhost:3001/login
+      # - URLS_CONSENT=http://localhost:3001/consent
     restart: unless-stopped
     depends_on:
       - hydra-migrate
