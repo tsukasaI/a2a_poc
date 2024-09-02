@@ -1,0 +1,18 @@
+## Ory Hydra Configuration
+serve:
+  public:
+    cors:
+      enabled: true
+      allowed_origins:
+        - "*"
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      allowed_headers:
+        - "*"
+      exposed_headers:
+        - "*"

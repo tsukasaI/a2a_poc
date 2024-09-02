@@ -6,23 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"context"
-
-	"golang.org/x/oauth2"
 )
 
 const hydraAdminURL = "http://localhost:4445"
 
 var cookieStore []*http.Cookie
-var verifier = oauth2.GenerateVerifier()
 
 func main() {
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/consent", consentHandler)
 	port := ":3030"
-	log.Println("verifier: ", verifier)
-	log.Println("oauth2.S256ChallengeOption(verifier): ", oauth2.S256ChallengeOption(verifier))
 	log.Printf("Login & Consent app listening on port %s", port)
 	log.Fatal(http.ListenAndServe(port, nil))
 }
@@ -156,10 +149,6 @@ func consentHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Println(deeplink)
 
-		req, _ := http.NewRequest(http.MethodGet, deeplink, nil)
-
-		getToken(req.FormValue("code"))
-
 		http.Redirect(w, r, deeplink, http.StatusFound)
 	}
 }
@@ -256,33 +245,4 @@ func getCodeRequest(url string) (string, error) {
 		return "", fmt.Errorf("missing redirect_to field in response")
 	}
 	return redirectTo[0], nil
-}
-
-func getToken(code string) {
-	log.Println("code: ", code)
-	ctx := context.Background()
-	conf := &oauth2.Config{
-		ClientID: "3a121f8a-9802-4efc-b23d-214a90cda035",
-		// ClientSecret: "YOUR_CLIENT_SECRET",
-		Scopes: []string{"offline_access", "offline", "openid"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "http://localhost:4444/oauth2/auth",
-			TokenURL: "http://localhost:4444/oauth2/token",
-		},
-		RedirectURL: "testDeepLink://mobile",
-	}
-
-	// Use the authorization code that is pushed to the redirect
-	// URL. Exchange will do the handshake to retrieve the
-	// initial access token. The HTTP Client returned by
-	// conf.Client will refresh the token as necessary.
-	tok, err := conf.Exchange(ctx, code, oauth2.VerifierOption(verifier))
-	if err != nil {
-		log.Println("Exchange err: ", err)
-	}
-
-	log.Printf("tok: %+v\n\n", tok)
-
-	// client := conf.Client(ctx, tok)
-	// client.Get("...")
 }

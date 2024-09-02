@@ -1,6 +1,7 @@
 import type { Component } from 'solid-js';
 import { Route, Router, useSearchParams } from '@solidjs/router';
 import styles from './App.module.css';
+import axios from 'axios';
 
 const Home: Component = () => {
   return (
@@ -17,16 +18,26 @@ type ConsentChallengeQuery = { consent_challenge: string }
 
 const Login: Component = () => {
   const [searchParams, _] = useSearchParams<LoginChallengeQuery>()
-  console.log(searchParams.login_challenge)
+
+  const handleLogin = () => {
+    axios.post("http://localhost:3030/login", {
+      "login_challenge": searchParams.login_challenge,
+      "username": "testHydraUser0011",
+    }).then((res) => {
+      const loc = res.headers["location"]
+      window.location.href = loc
+    })
+  }
   return <div class={styles.App}>
     <header class={styles.header}>
       <h1>Payment App -Login-</h1>
     </header>
     <div>
       <form action="http://localhost:3030/login" method="post">
+        <input type="hidden" name="username" value="testHydraUser0018" />
         <input type="hidden" name="login_challenge" value={searchParams.login_challenge} />
         <button type="submit">Login</button>
-      </form>
+        </form>
     </div>
   </div>
 }

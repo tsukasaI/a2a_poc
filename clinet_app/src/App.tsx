@@ -1,11 +1,10 @@
-import type { Component } from 'solid-js';
+import { createSignal, type Component } from 'solid-js';
 import { Route, Router, useSearchParams } from '@solidjs/router';
 import styles from './App.module.css';
 import { generateCodeVerifier, OAuth2Client, OAuth2Fetch } from '@badgateway/oauth2-client';
 import { getCookie, setCookie } from 'typescript-cookie'
-import axios from 'axios';
 
-const clientId = "d03a0fa9-3059-4d16-bf51-1decc9bae9b0";
+const clientId = "4d9b630b-abfa-4aaf-82c7-9a50518cb68b";
 type CodeQuery = { code: string }
 
 let codeVerifier = ""
@@ -13,21 +12,31 @@ let codeVerifier = ""
 const client = new OAuth2Client({
   server: 'http://localhost:4444/',
   clientId: clientId,
+  tokenEndpoint: '/oauth2/token',
+  authorizationEndpoint: '/oauth2/auth',
 });
 
 const Callback: Component = () => {
   const [searchParams, _] = useSearchParams<CodeQuery>()
-  let r
-  let e
+  const [accessToken, setAccessToken] = createSignal("")
+  const [refreshToken, setRefreshToken] = createSignal("")
+  const [expiresAt, setExpiresAt] = createSignal(0)
 
   const exchangeCode = () => {
-    axios.post("http://localhost:4444/oauth2/token", {
-      "grant_type": "authorization_code",
-      "code": searchParams.code,
-      "redirect_uri": "http://localhost:3002/callback",
-      "code_verifier": codeVerifier,
-      "client_id": clientId,
-    }).then(res => { console.log(res); r = res }).catch(er => { console.log(er); e = er })
+    client.authorizationCode.getTokenFromCodeRedirect(
+      document.location.href,
+      {
+        redirectUri: "http://localhost:3002/callback",
+        state: "aaaaaaaaaaaaaaaaaa",
+        codeVerifier: codeVerifier,
+      })
+
+      .then(res => {
+        setAccessToken(res.accessToken)
+        if (res.refreshToken) { setRefreshToken(res.refreshToken) }
+        if (res.expiresAt) { setExpiresAt(res.expiresAt) }
+
+      }).catch(e => { console.error(e) })
   }
   return (
     <div class={styles.App}>
@@ -36,8 +45,12 @@ const Callback: Component = () => {
       </header>
       <p>code: {searchParams.code}</p>
       <button onClick={exchangeCode}>Exchange</button>
-      <p>r: {r}</p>
-      <p>e: {e}</p>
+
+      <div>
+      {accessToken() !== "" && <p>access_token: {accessToken()}</p>}
+      {refreshToken() !== "" && <p>access_token: {refreshToken()}</p>}
+      {expiresAt() !== 0 && <p>access_token: {expiresAt()}</p>}
+      </div>
     </div>
   );
 };
@@ -45,7 +58,20 @@ const Callback: Component = () => {
 
 const Home: Component = () => {
   const onClickButton = () => {
-    window.open(`http://localhost:4444/oauth2/auth?client_id=${clientId}&redirect_uri=http%3A%2F%2Flocalhost%3A3002%2Fcallback&response_type=code&state=aaaaaaaaaaaaaaaaaa&code_challenge_method=S256&code_challenge=${codeVerifier}`)
+    client.authorizationCode.getAuthorizeUri({
+
+      // URL in the app that the user should get redirected to after authenticating
+      redirectUri: 'http://localhost:3002/callback',
+
+      // Optional string that can be sent along to the auth server. This value will
+      // be sent along with the redirect back to the app verbatim.
+      state: 'aaaaaaaaaaaaaaaaaa',
+
+      codeVerifier,
+
+      // scope: ['scope1', 'scope2'],
+
+    }).then((res) => { document.location = res });
   }
   return (
     <div class={styles.App}>
@@ -65,7 +91,6 @@ const setCodeVerifier = () => {
     generateCodeVerifier().then((res) => {
       codeVerifier = res
       setCookie("codeVerifier", codeVerifier)
-      console.log(codeVerifier)
     });
   } else {
     codeVerifier = codeVerifierCookie
